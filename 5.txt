@@ -1,0 +1,234 @@
+$MOD51
+org 00h
+    ljmp main
+
+org 30h
+
+lcd_init:
+    mov a, #38h
+    lcall lcd_cmd
+    mov a, #0Ch
+    lcall lcd_cmd
+    mov a, #06h
+    lcall lcd_cmd
+    mov a, #01h
+    lcall lcd_cmd
+    mov a, #80h
+    lcall lcd_cmd
+    ret
+
+lcd_cmd:
+    mov P0, a
+    clr P2.1
+    clr P2.0
+    setb P2.2
+    clr P2.2
+    lcall delay
+    ret
+
+lcd_data:
+    mov P0, a
+    setb P2.1
+    clr P2.0
+    setb P2.2
+    clr P2.2
+    lcall delay
+    ret
+
+delay:
+    mov r7, #20
+d1: djnz r7, d1
+    ret
+
+delay_debounce:
+    mov r7, #250
+dd1: djnz r7, dd1
+    ret
+
+main:
+    mov P0, #0FFh
+    mov P1, #0FFh
+    mov P2, #0FFh
+    mov P3, #0FFh
+    
+    lcall lcd_init
+    
+    mov r0, #0
+    mov r1, #30h
+
+scan:
+    mov r4, #0
+
+col_loop:
+    setb P3.0
+    setb P3.1
+    setb P3.2
+    setb P3.3
+    setb P3.4
+    
+    mov a, r4
+    cjne a, #0, c1
+    clr P3.0
+    sjmp active
+c1:
+    cjne a, #1, c2
+    clr P3.1
+    sjmp active
+c2:
+    cjne a, #2, c3
+    clr P3.2
+    sjmp active
+c3:
+    cjne a, #3, c4
+    clr P3.3
+    sjmp active
+c4:
+    clr P3.4
+
+active:
+    mov r2, #5
+wait_settle:
+    djnz r2, wait_settle
+    
+    mov a, P1
+    anl a, #0Fh
+    
+    cjne a, #0Fh, key_pressed
+    
+    inc r4
+    cjne r4, #5, col_loop
+    ljmp scan
+
+key_pressed:
+    mov a, P1
+    anl a, #0Fh
+    mov r5, a
+    
+    lcall delay_debounce
+    
+wait_rel:
+    mov a, P1
+    anl a, #0Fh
+    cjne a, #0Fh, wait_rel
+    mov r2, #5
+wait_rel2:
+    djnz r2, wait_rel2
+    
+    mov a, r5
+    
+    cjne a, #0Eh, row1
+    mov a, r4
+    cjne a, #0, r0c1
+    mov a, #'7'
+    ljmp got_sym
+r0c1:
+    cjne a, #1, r0c2
+    mov a, #'8'
+    ljmp got_sym
+r0c2:
+    cjne a, #2, r0c3
+    mov a, #'9'
+    ljmp got_sym
+r0c3:
+    cjne a, #3, r0c4
+    mov a, #'+'
+    ljmp got_sym
+r0c4:
+    mov a, #' '
+    ljmp got_sym
+
+row1:
+    cjne a, #0Dh, row2
+    mov a, r4
+    cjne a, #0, r1c1
+    mov a, #'4'
+    ljmp got_sym
+r1c1:
+    cjne a, #1, r1c2
+    mov a, #'5'
+    ljmp got_sym
+r1c2:
+    cjne a, #2, r1c3
+    mov a, #'6'
+    ljmp got_sym
+r1c3:
+    cjne a, #3, r1c4
+    mov a, #'-'
+    ljmp got_sym
+r1c4:
+    mov a, #' '
+    ljmp got_sym
+
+row2:
+    cjne a, #0Bh, row3
+    mov a, r4
+    cjne a, #0, r2c1
+    mov a, #'1'
+    ljmp got_sym
+r2c1:
+    cjne a, #1, r2c2
+    mov a, #'2'
+    ljmp got_sym
+r2c2:
+    cjne a, #2, r2c3
+    mov a, #'3'
+    ljmp got_sym
+r2c3:
+    cjne a, #3, r2c4
+    mov a, #'*'
+    ljmp got_sym
+r2c4:
+    mov a, #' '
+    ljmp got_sym
+
+row3:
+    cjne a, #07h, fake_row
+    mov a, r4
+    cjne a, #0, r3c1
+    mov a, #'C'
+    ljmp got_sym
+r3c1:
+    cjne a, #1, r3c2
+    mov a, #'0'
+    ljmp got_sym
+r3c2:
+    cjne a, #2, r3c3
+    mov a, #'='
+    ljmp got_sym
+r3c3:
+    cjne a, #3, r3c4
+    mov a, #'/'
+    ljmp got_sym
+r3c4:
+    mov a, #' '
+    ljmp got_sym
+
+fake_row:
+    mov a, #' '
+    ljmp got_sym
+
+got_sym:
+    cjne a, #'C', not_clear
+    mov r0, #0
+    mov r1, #30h
+    mov a, #01h
+    lcall lcd_cmd
+    mov a, #80h
+    lcall lcd_cmd
+    ljmp scan
+
+not_clear:
+    mov r2, a
+    mov a, r0
+    cjne a, #16, add_char
+    ljmp scan
+
+add_char:
+    mov a, r2
+    mov @r1, a
+    inc r1
+    inc r0
+    lcall lcd_data
+    ljmp scan
+
+END

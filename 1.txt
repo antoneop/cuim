@@ -1,0 +1,18 @@
+$MOD51
+org 00h
+clr P1.0
+mov dptr,#400h
+mov r2,#0ffh
+mov r1,#0AAh
+test:
+mov a,r1
+movx @dptr,a
+movx a,@dptr
+xrl a,#0AAh
+jnz error
+inc dptr
+djnz r2,test
+error:
+    setb p1.0       
+    sjmp $   
+END

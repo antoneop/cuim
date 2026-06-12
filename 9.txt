@@ -1,0 +1,66 @@
+$MOD51
+
+ORG 0000H
+JMP START
+
+ORG 0030H
+
+START:
+    MOV TMOD,#01H
+
+MAIN:
+
+    MOV P2,#0FFH
+
+    MOV R0,#15
+    MOV A,#0FFH
+
+DECAY:
+    CLR C
+    SUBB A,#08H
+    MOV P2,A
+    CALL DELAY5
+    DJNZ R0,DECAY
+
+    MOV P2,#07FH
+
+    MOV R0,#15
+    MOV A,#07FH
+
+RISE:
+    ADD A,#04H
+    MOV P2,A
+    CALL DELAY5
+    DJNZ R0,RISE
+
+    MOV P2,#0BFH
+
+    MOV R2,#15
+
+PLATEAU:
+    CALL DELAY5
+    DJNZ R2,PLATEAU
+
+    MOV P2,#00H
+
+    MOV R2,#32
+
+ZERO:
+    CALL DELAY5
+    DJNZ R2,ZERO
+
+    JMP MAIN
+
+DELAY5:
+    MOV TH0,#0FFH
+    MOV TL0,#0FFH
+    CLR TF0
+    SETB TR0
+
+WAIT1:
+    JNB TF0,WAIT1
+
+    CLR TR0
+    RET
+
+END

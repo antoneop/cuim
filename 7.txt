@@ -1,0 +1,62 @@
+$MOD52
+
+ORG 0000H
+JMP START
+
+ORG 0030H
+
+DUTY EQU 30H
+
+START:
+    MOV SP, #70H
+    MOV DUTY, #50
+    MOV P1, #00H
+    
+    MOV RCAP2H, #0FFH
+    MOV RCAP2L, #0FFH
+    MOV TH2, #0FFH
+    MOV TL2, #0FFH
+    MOV T2CON, #04H
+
+MAIN:
+    JNB TF2, MAIN
+    CLR TF2
+    
+    ; ????????? ???
+    SETB P1.0
+    
+    MOV R2, DUTY
+HLOOP:
+    DJNZ R2, HLOOP
+    
+    CLR P1.0
+    
+    MOV A, #100
+    CLR C
+    SUBB A, DUTY
+    MOV R2, A
+    
+LLOOP:
+    DJNZ R2, LLOOP
+    
+
+    JB P3.2, CHK_MIN
+    MOV A, DUTY
+    CJNE A, #50, INC_DUTY
+    SJMP CHK_MIN
+    
+INC_DUTY:
+    INC DUTY
+    SJMP CHK_MIN
+    
+CHK_MIN:
+    JB P3.3, MAIN
+    MOV A, DUTY
+    CJNE A, #0, DEC_DUTY
+    SJMP MAIN
+    
+DEC_DUTY:
+    DEC DUTY
+    SJMP MAIN
+
+END
